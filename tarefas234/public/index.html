@@ -1,0 +1,165 @@
+<title> Tarefas do Yano </title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+
+<h1> CLIQUER </h1>
+<button id="save">SAVE</button>
+
+<button id="load">LOAD</button><input id="saveId" placeholder="save id" type="text" />
+<div>
+    <h2 id="char"> Loading... </h2>
+    <div id="pontos" />
+    <button id="botao" style="position:fixed;left:500px;top:500px;width:50px;height:50px;background-color:red" />
+</div>
+
+<script>
+
+    function main() {
+        function readCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        // Atividade 2: Movimentacao simples do DOM
+        var points = parseInt(readCookie("points")) || 0;
+
+        var divPontos = document.getElementById("pontos") || 0;
+
+        function pointsTxt(points) {
+            return document.createTextNode("Points: " + points);
+        }
+
+        var title = pointsTxt(points);
+        var heading = document.createElement("h3");
+
+        heading.appendChild(title);
+        divPontos.appendChild(heading);
+
+        // Coisas do botao
+        var button = document.getElementById("botao");
+
+        button.onclick = function() {
+            points = points + 1;
+            heading.removeChild(title);
+            title = pointsTxt(points);
+            heading.appendChild(title);
+            // Seta a cookie
+            document.cookie = "points=" + points;
+        };
+
+        // Atividade 3: Post e Get
+        var savebutton = document.getElementById("save");
+        savebutton.onclick = function() {
+          document.getElementById("saveId").value = "Saving...";
+          var saveId = 's' + Math.floor(Math.random() * 21349217454);
+            var http = new XMLHttpRequest();
+            var url = "save";
+            var params = JSON.stringify({
+              hash: saveId,
+              data: {
+                points: points
+              }
+            })
+            http.open("POST", url, true);
+
+            //Send the proper header information along with the request
+            http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+            http.onreadystatechange = function() { //Call a function when the state changes.
+                if (http.readyState == 4 && http.status == 200) {
+                    document.getElementById("saveId").value = saveId;
+                }
+            }
+            http.send(params);
+        }
+
+        var loadbutton = document.getElementById("load");
+        loadbutton.onclick = function() {
+            var loadId = document.getElementById("saveId").value;
+            var http = new XMLHttpRequest();
+            var url = "load/" + loadId;
+            http.open("GET", url, true);
+
+            http.onreadystatechange = function() { //Call a function when the state changes.
+                if (http.readyState == 4 && http.status == 200) {
+                    var resData = JSON.parse(http.response);
+                    console.log(resData);
+                    points = resData.points;
+                    document.cookie = "points=" + points;
+                    heading.removeChild(title);
+                    title = pointsTxt(points);
+                    heading.appendChild(title);
+
+                    // new jquery stuff
+                    SetCharacter(points);
+                    MoveChar();
+                }
+            }
+            http.send();
+        }
+
+
+        // Atividade 4: Jquery (Character)
+        var divChar = document.getElementById("char");
+
+        function SetCharacter(points) {
+            var personId = 87 - Math.floor(points / 10);
+            // Carregando o JSON da HTTP request da SWAPI
+            $("#char").empty();
+            $("#char").append("Loading...");
+            $.get("https://swapi.co/api/people/" + personId, function(data) {
+                $("#char").empty();
+                $("#char").append(data.name);
+            });
+        }
+
+        // Adiciona novo callback no botao;
+        $("#botao").click(function() {
+            if (points % 10 == 0) {
+                SetCharacter(points);
+                MoveChar()
+            }
+            MoveButton();
+        });
+
+        function MoveChar() {
+            $("#char").animate({
+                fontSize: '5em'
+            }, "slow");
+            $("#char").animate({
+                fontSize: '2em'
+            }, "slow");
+        }
+
+        function MoveButton() {
+
+            var movX = Math.random() * 200 - 100;
+            var movY = Math.random() * 200 - 100;
+
+            while (button.getBoundingClientRect().left + movX > 1000 || button.getBoundingClientRect().left + movX < 0) {
+                movX = Math.random() * 200 - 100;
+            }
+
+            while (button.getBoundingClientRect().top + movY > 700 || button.getBoundingClientRect().top + movY < 0) {
+                movY = Math.random() * 200 - 100;
+            }
+
+            $("#botao").animate({
+                top: '+=' + movY,
+                left: '+=' + movX,
+            });
+        }
+
+
+        SetCharacter(points);
+    };
+
+    document.addEventListener("DOMContentLoaded", main);
+</script>
